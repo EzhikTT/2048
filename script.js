@@ -1,12 +1,20 @@
 class Game2048 {
     field = new Field(document.getElementById("app"), 4, [2, 2, 2, 4, 8]) // TODO
     score = 0
-    time = null // ?
+    #time = null // ? // ES2019
     player = ""
     app = null // ?
     maxScore = 2048
     history = []
     startNumbers = [2, 2, 2, 4] // TODO ?
+
+    get time() {
+        return this.#time
+    }
+
+    set time(val) {
+        this.#time = val
+    }
 
     constructor(appId, player){
         this.app = document.getElementById(appId)
@@ -14,9 +22,9 @@ class Game2048 {
     }
 
     init(){
-        this.render()
+        this.#render()
     }
-    render(){
+    #render(){ // ES2019
         this.showField()
         this.showScore()
         this.showTime()
@@ -29,8 +37,8 @@ class Game2048 {
     stepBack(){}
     move(){}
     
-    showScore(){}
-    showField(){
+    showScore() {}
+    showField() {
         this.field.render(this.app)
     }
     showTime(){}
@@ -75,15 +83,48 @@ class Field {
 
                 if(startNumbers.length > 0 && isNeedAdd){
                     const index = Math.round(Math.random() * (startNumbers.length - 1))
-                    // console.log(startNumbers.length, index)
                     num = startNumbers.splice(index, 1)[0]
                 }
 
-                row.push(
-                    new Cell(new Position(i, j), num, "cell", style)
-                )
+                let cell 
+
+                if(n % 3 === 0){
+                    cell = new Cell(new Position(i, j), num, "cell", style)
+                }
+                else if(n % 3 === 1){
+                    cell = new OtherColorCell(new Position(i, j), num, "cell", style)
+                }
+                else {
+                    cell = new BlackCell(new Position(i, j), num, "cell", style)
+                }
+
+                row.push(cell)
             }
             this.cells.push(row)
+        }
+
+        // this.addNewNumber()
+
+        setInterval(
+            () => this.addNewNumber(),
+            500
+        )
+
+        // console.log(this.cells)
+
+    }
+
+    addNewNumber(){
+        const emptyCells = this.cells.flat().filter(cell => cell.number === null)
+        const index = Math.round(Math.random() * (emptyCells.length - 1))
+        // console.log(index)
+
+        if(index >= 0 && emptyCells[index]){
+            // cell.number === null
+            emptyCells[index].number = 3 // set number(num) => num = 3 // .number(3)
+            // cell.number === 3
+    
+            emptyCells[index].element.style.color = "black"
         }
     }
 
@@ -101,12 +142,21 @@ class Field {
 
 class Cell {
     element = document.createElement("div")
-    number = 2
+    #number = 2
     position = new Position()
+
+    get number(){
+        return this.#number
+    }
+
+    set number(number) {
+        this.#number = number
+        this.element.innerText = this.#number
+    }
 
     constructor(position, number = 2, className = "cell", style = {}) {
         this.position = position
-        this.number = number
+        this.#number = number
 
         this.element.classList.add(className)
 
@@ -115,8 +165,8 @@ class Cell {
             this.element.style[key] = style[key] // style = {width: "100%"} ==> key = "width", style[key] = "100%"
         }
 
-        if(this.number){
-            this.element.innerText = this.number
+        if(this.#number){
+            this.element.innerText = this.#number
             this.element.style.color = this.getColor()
         }
 
@@ -128,7 +178,7 @@ class Cell {
     render(){}
 
     getColor(){
-        const num = Math.log2(this.number) // 1..11
+        const num = Math.log2(this.#number) // 1..11
         const step = 255 / 10
         const middleStep = 255 / 2 / 10
 
@@ -158,6 +208,30 @@ class Cell {
     }
 }
 
+class BlackCell extends Cell {
+    constructor(position, number = 2, className = "cell", style = {}){
+        super(position, number, className, style)
+
+        this.element.style.backgroundColor = "rgba(0,0,0,.4)"
+    }
+}
+
+class OtherColorCell extends Cell {
+    getColor(){
+        const num = Math.log2(this.number) // 1..11
+        const step = 255 / 10
+        const middleStep = step / 2
+
+        // rgb((255 / 4), 0, 255) -> rgba((255 / 4 * 3), 255, 0)
+
+        const blue = step * (11 - num),
+              red = (255 / 4) + (middleStep * (num - 1)),
+              green = step * (num - 1)
+
+        return `rgb(${red}, ${green}, ${blue})`
+    }
+}
+
 class Position {
     x = 0
     y = 0
@@ -170,3 +244,10 @@ class Position {
 
 const game = new Game2048("app", "player")
 game.init()
+
+// game.#time // Error -> private
+// game.field // OK -> public
+// game.#render() // Error -> private
+
+// game.time // OK -> get time()
+// game.time = "some time" // OK -> set time(val) -> val = "some time"
