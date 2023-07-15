@@ -9,6 +9,7 @@ class Game2048 {
     #startNumbers = [2, 2, 2, 4, 8, 16, 1024]
     #scoreElement = document.createElement("div")
     #fieldElement = document.createElement("div")
+    #popup = null
 
     get time() {
         return this.#time
@@ -18,18 +19,20 @@ class Game2048 {
         this.#time = val
     }
 
-    constructor(appId, player) {
+    constructor(appId, player, popup = null) {
         this.app = document.getElementById(appId)
         this.player = player
 
-        
+        if(popup){
+            this.#popup = popup
+        }
+
         this.#fieldElement.classList.add('field')
         this.field = new Field(this.#fieldElement, 4, this.#startNumbers)
 
         this.app.appendChild(this.#scoreElement)
         this.app.appendChild(this.#fieldElement)
 
-        // console.log('game constructor')
         document.body.addEventListener("keyup", (event) => this.#move(event))
     }
 
@@ -42,31 +45,46 @@ class Game2048 {
         this.showTime()
     }
 
-    gameOver() { }
+    gameOver() {
+        if(this.#popup){
+            this.#popup.addContentToBody(`
+                <div style="text-align: center; font-weight: 800">You are LOSER</div>
+                <div style="text-align: center">Your score are ${this.score}</div>
+            `)
+            this.#popup.show()
+            this.restartGame()
+        }
+    }
     checkWin() { }
     restartGame() { }
 
     stepBack() { }
     #move(event) {
+        let isNext = true
         switch (event.code) {
             case "KeyW":
                 this.#moveTop()
-                this.field.addNewNumber()
+                isNext = this.field.addNewNumber()
                 break
             case "KeyS":
                 this.#moveBottom()
-                this.field.addNewNumber()
+                isNext = this.field.addNewNumber()
                 break
             case "KeyD":
                 this.#moveRight()
-                this.field.addNewNumber()
+                isNext = this.field.addNewNumber()
                 break
             case "KeyA":
                 this.#moveLeft()
-                this.field.addNewNumber()
+                isNext = this.field.addNewNumber()
                 break
         }
+
         this.showScore()
+
+        if(!isNext){
+            this.gameOver()
+        }
     }
 
     #moveTop() {
@@ -79,7 +97,7 @@ class Game2048 {
                         this.field.cells[i - 1][j].number *= 2
                         this.field.cells[i][j].number = null
                     }
-                    else if(this.field.cells[i - 1][j].number === null){
+                    else if (this.field.cells[i - 1][j].number === null) {
                         this.field.cells[i - 1][j].number = this.field.cells[i][j].number
                         this.field.cells[i][j].number = null
                     }
@@ -88,9 +106,9 @@ class Game2048 {
         }
     }
 
-    #moveBottom(){
-        for(let i = 0; i < this.field.cells.length - 1; i++){
-            for(let j = 0; j < this.field.cells[i].length; j++){
+    #moveBottom() {
+        for (let i = 0; i < this.field.cells.length - 1; i++) {
+            for (let j = 0; j < this.field.cells[i].length; j++) {
                 if (this.field.cells[i][j].number !== null) {
                     if (this.field.cells[i + 1][j].number !== null &&
                         this.field.cells[i][j].number === this.field.cells[i + 1][j].number
@@ -98,18 +116,18 @@ class Game2048 {
                         this.field.cells[i + 1][j].number *= 2
                         this.field.cells[i][j].number = null
                     }
-                    else if(this.field.cells[i + 1][j].number === null){
+                    else if (this.field.cells[i + 1][j].number === null) {
                         this.field.cells[i + 1][j].number = this.field.cells[i][j].number
                         this.field.cells[i][j].number = null
                     }
                 }
             }
         }
-    } 
+    }
 
-    #moveRight(){
-        for(let j = 0; j < this.field.cells[0].length - 1; j++) { // i = 0
-            for(let i = 0; i < this.field.cells.length; i++) {
+    #moveRight() {
+        for (let j = 0; j < this.field.cells[0].length - 1; j++) { // i = 0
+            for (let i = 0; i < this.field.cells.length; i++) {
                 if (this.field.cells[i][j].number !== null) {
                     if (this.field.cells[i][j + 1].number !== null &&
                         this.field.cells[i][j].number === this.field.cells[i][j + 1].number
@@ -117,7 +135,7 @@ class Game2048 {
                         this.field.cells[i][j + 1].number *= 2
                         this.field.cells[i][j].number = null
                     }
-                    else if(this.field.cells[i][j + 1].number === null){
+                    else if (this.field.cells[i][j + 1].number === null) {
                         this.field.cells[i][j + 1].number = this.field.cells[i][j].number
                         this.field.cells[i][j].number = null
                     }
@@ -126,9 +144,9 @@ class Game2048 {
         }
     }
 
-    #moveLeft(){
-        for(let j = this.field.cells[0].length - 1; j > 0; j--){
-            for(let i = 0; i < this.field.cells.length; i++) {
+    #moveLeft() {
+        for (let j = this.field.cells[0].length - 1; j > 0; j--) {
+            for (let i = 0; i < this.field.cells.length; i++) {
                 if (this.field.cells[i][j].number !== null) {
                     if (this.field.cells[i][j - 1].number !== null &&
                         this.field.cells[i][j].number === this.field.cells[i][j - 1].number
@@ -136,7 +154,7 @@ class Game2048 {
                         this.field.cells[i][j - 1].number *= 2
                         this.field.cells[i][j].number = null
                     }
-                    else if(this.field.cells[i][j - 1].number === null){
+                    else if (this.field.cells[i][j - 1].number === null) {
                         this.field.cells[i][j - 1].number = this.field.cells[i][j].number
                         this.field.cells[i][j].number = null
                     }
@@ -145,11 +163,11 @@ class Game2048 {
         }
     }
 
-    showScore() { 
+    showScore() {
         let max = 2
-        for(let i = 0; i < this.field.cells.length; i++){
-            for(let j = 0; j < this.field.cells[i].length; j++){
-                if(this.field.cells[i][j].number !== null && this.field.cells[i][j].number > max){
+        for (let i = 0; i < this.field.cells.length; i++) {
+            for (let j = 0; j < this.field.cells[i].length; j++) {
+                if (this.field.cells[i][j].number !== null && this.field.cells[i][j].number > max) {
                     max = this.field.cells[i][j].number
                 }
             }
@@ -245,7 +263,14 @@ class Field {
             // cell.number === 3
 
             // emptyCells[index].element.style.color = "black"
+
+            return true
         }
+        // else {
+        //     return false
+        // }
+
+        return false
     }
 
     render(app) {
@@ -363,23 +388,69 @@ class Position {
     }
 }
 
+/*
+<div class="wrapper-popup"> // wrapper
+    <div> // content
+        <div class="popup-body"></div> // body
+        <div></div>.... // buttons
+    </div>
+</div>
+*/
 class Popup {
     #wrapper = document.createElement("div")
     #body = document.createElement("div")
 
-    constructor(actions = {}){
-         // Создаем всю структуру элемента, как раньше делали в html
-         // Добавляем обработчики на закрытие
-         // Привязка действий к кнопкам
-    }    
+    constructor(actions = {}) {
+        // Создаем всю структуру элемента, как раньше делали в html
+        this.#wrapper.classList.add("wrapper-popup")
+        this.#body.classList.add("popup-body")
 
-    show(){}
-    hide(){}
+        const popupContent = document.createElement("div")
 
-    addContnentToBody(content){}
+        popupContent.appendChild(this.#body)
+
+        // Добавляем обработчики на закрытие
+        // Привязка действий к кнопкам
+        if (Object.keys(actions).length > 0) {
+            for (let key in actions) {
+                // actions = {key: {label?, action}}
+                // actions = {
+                //    save: { label: 'сохранить', action: (event) => {...} }, 
+                //    delete: { action: () => {...} }
+                //    ...
+                // }
+                const action = actions[key]
+                if (action.action) {
+                    const button = document.createElement("div")
+
+                    button.classList.add('button')
+                    button.innerText = action.label || key // action.label !== undefined ? action.label : key
+                    button.addEventListener('click', (event) => action.action(event))
+
+                    popupContent.appendChild(button)
+                }
+            }
+        }
+        this.#wrapper.appendChild(popupContent)
+
+        document.body.appendChild(this.#wrapper)
+    }
+
+    show() {
+        this.#wrapper.style.display = "flex"
+    }
+    hide() {
+        this.#wrapper.style.display = "none"
+    }
+
+    addContentToBody(content) {
+        this.#body.innerHTML = content
+    }
 }
 
-const game = new Game2048("app", "player")
+const popup = new Popup()
+
+const game = new Game2048("app", "player", popup)
 game.init()
 
 // game.#time // Error -> private
