@@ -1,12 +1,14 @@
 class Game2048 {
-    field = new Field(document.getElementById("app"), 4, [2, 2, 2, 4, 8]) // TODO
-    score = 0
+    field = null
+    score = 2
     #time = null // ? // ES2019
     player = ""
     app = null // ?
     maxScore = 2048
     history = []
-    startNumbers = [2, 2, 2, 4] // TODO ?
+    #startNumbers = [2, 2, 2, 4, 8, 16, 1024]
+    #scoreElement = document.createElement("div")
+    #fieldElement = document.createElement("div")
 
     get time() {
         return this.#time
@@ -16,34 +18,152 @@ class Game2048 {
         this.#time = val
     }
 
-    constructor(appId, player){
+    constructor(appId, player) {
         this.app = document.getElementById(appId)
         this.player = player
+
+        
+        this.#fieldElement.classList.add('field')
+        this.field = new Field(this.#fieldElement, 4, this.#startNumbers)
+
+        this.app.appendChild(this.#scoreElement)
+        this.app.appendChild(this.#fieldElement)
+
+        // console.log('game constructor')
+        document.body.addEventListener("keyup", (event) => this.#move(event))
     }
 
-    init(){
+    init() {
         this.#render()
     }
-    #render(){ // ES2019
+    #render() { // ES2019
         this.showField()
         this.showScore()
         this.showTime()
     }
 
-    gameOver(){}
-    checkWin(){}
-    restartGame(){}
+    gameOver() { }
+    checkWin() { }
+    restartGame() { }
 
-    stepBack(){}
-    move(){}
-    
-    showScore() {}
-    showField() {
-        this.field.render(this.app)
+    stepBack() { }
+    #move(event) {
+        switch (event.code) {
+            case "KeyW":
+                this.#moveTop()
+                this.field.addNewNumber()
+                break
+            case "KeyS":
+                this.#moveBottom()
+                this.field.addNewNumber()
+                break
+            case "KeyD":
+                this.#moveRight()
+                this.field.addNewNumber()
+                break
+            case "KeyA":
+                this.#moveLeft()
+                this.field.addNewNumber()
+                break
+        }
+        this.showScore()
     }
-    showTime(){}
 
-    saveResult(){}
+    #moveTop() {
+        for (let i = this.field.cells.length - 1; i > 0; i--) {
+            for (let j = 0; j < this.field.cells[i].length; j++) {
+                if (this.field.cells[i][j].number !== null) {
+                    if (this.field.cells[i - 1][j].number !== null &&
+                        this.field.cells[i][j].number === this.field.cells[i - 1][j].number
+                    ) {
+                        this.field.cells[i - 1][j].number *= 2
+                        this.field.cells[i][j].number = null
+                    }
+                    else if(this.field.cells[i - 1][j].number === null){
+                        this.field.cells[i - 1][j].number = this.field.cells[i][j].number
+                        this.field.cells[i][j].number = null
+                    }
+                }
+            }
+        }
+    }
+
+    #moveBottom(){
+        for(let i = 0; i < this.field.cells.length - 1; i++){
+            for(let j = 0; j < this.field.cells[i].length; j++){
+                if (this.field.cells[i][j].number !== null) {
+                    if (this.field.cells[i + 1][j].number !== null &&
+                        this.field.cells[i][j].number === this.field.cells[i + 1][j].number
+                    ) {
+                        this.field.cells[i + 1][j].number *= 2
+                        this.field.cells[i][j].number = null
+                    }
+                    else if(this.field.cells[i + 1][j].number === null){
+                        this.field.cells[i + 1][j].number = this.field.cells[i][j].number
+                        this.field.cells[i][j].number = null
+                    }
+                }
+            }
+        }
+    } 
+
+    #moveRight(){
+        for(let j = 0; j < this.field.cells[0].length - 1; j++) { // i = 0
+            for(let i = 0; i < this.field.cells.length; i++) {
+                if (this.field.cells[i][j].number !== null) {
+                    if (this.field.cells[i][j + 1].number !== null &&
+                        this.field.cells[i][j].number === this.field.cells[i][j + 1].number
+                    ) {
+                        this.field.cells[i][j + 1].number *= 2
+                        this.field.cells[i][j].number = null
+                    }
+                    else if(this.field.cells[i][j + 1].number === null){
+                        this.field.cells[i][j + 1].number = this.field.cells[i][j].number
+                        this.field.cells[i][j].number = null
+                    }
+                }
+            }
+        }
+    }
+
+    #moveLeft(){
+        for(let j = this.field.cells[0].length - 1; j > 0; j--){
+            for(let i = 0; i < this.field.cells.length; i++) {
+                if (this.field.cells[i][j].number !== null) {
+                    if (this.field.cells[i][j - 1].number !== null &&
+                        this.field.cells[i][j].number === this.field.cells[i][j - 1].number
+                    ) {
+                        this.field.cells[i][j - 1].number *= 2
+                        this.field.cells[i][j].number = null
+                    }
+                    else if(this.field.cells[i][j - 1].number === null){
+                        this.field.cells[i][j - 1].number = this.field.cells[i][j].number
+                        this.field.cells[i][j].number = null
+                    }
+                }
+            }
+        }
+    }
+
+    showScore() { 
+        let max = 2
+        for(let i = 0; i < this.field.cells.length; i++){
+            for(let j = 0; j < this.field.cells[i].length; j++){
+                if(this.field.cells[i][j].number !== null && this.field.cells[i][j].number > max){
+                    max = this.field.cells[i][j].number
+                }
+            }
+        }
+        this.score = max
+
+        this.#scoreElement.innerText = `Score: ${this.score}`
+    }
+    showField() {
+        this.field.render(this.#fieldElement)
+    }
+    showTime() { }
+
+    saveResult() { }
 }
 
 
@@ -60,16 +180,16 @@ class Field {
         this.initCells(size, startNumbers)
     } // return Object (=== Field ==> this)
 
-    initCells(size, startNumbers){
+    initCells(size, startNumbers) {
         const border = "1px solid rgba(0, 0, 0, 0.4)"
-        for(let i = 0; i < size; i++){
+        for (let i = 0; i < size; i++) {
             const row = []
-            for(let j = 0; j < size; j++){
+            for (let j = 0; j < size; j++) {
                 const style = {}
-                if(j < size - 1){
+                if (j < size - 1) {
                     style.borderRight = border
                 }
-                if(i < size - 1){
+                if (i < size - 1) {
                     style.borderBottom = border
                 }
 
@@ -81,22 +201,22 @@ class Field {
 
                 const isNeedAdd = n % 8 > 3 // 4, 5, 6, 7 => true
 
-                if(startNumbers.length > 0 && isNeedAdd){
+                if (startNumbers.length > 0 && isNeedAdd) {
                     const index = Math.round(Math.random() * (startNumbers.length - 1))
                     num = startNumbers.splice(index, 1)[0]
                 }
 
-                let cell 
+                let cell
 
-                if(n % 3 === 0){
-                    cell = new Cell(new Position(i, j), num, "cell", style)
-                }
-                else if(n % 3 === 1){
-                    cell = new OtherColorCell(new Position(i, j), num, "cell", style)
-                }
-                else {
-                    cell = new BlackCell(new Position(i, j), num, "cell", style)
-                }
+                // if(n % 3 === 0){
+                cell = new Cell(new Position(i, j), num, "cell", style)
+                // }
+                // else if(n % 3 === 1){
+                //     cell = new OtherColorCell(new Position(i, j), num, "cell", style)
+                // }
+                // else {
+                //     cell = new BlackCell(new Position(i, j), num, "cell", style)
+                // }
 
                 row.push(cell)
             }
@@ -105,32 +225,32 @@ class Field {
 
         // this.addNewNumber()
 
-        setInterval(
-            () => this.addNewNumber(),
-            500
-        )
+        // setInterval(
+        //     () => this.addNewNumber(),
+        //     500
+        // )
 
         // console.log(this.cells)
 
     }
 
-    addNewNumber(){
+    addNewNumber() {
         const emptyCells = this.cells.flat().filter(cell => cell.number === null)
         const index = Math.round(Math.random() * (emptyCells.length - 1))
         // console.log(index)
 
-        if(index >= 0 && emptyCells[index]){
+        if (index >= 0 && emptyCells[index]) {
             // cell.number === null
-            emptyCells[index].number = 3 // set number(num) => num = 3 // .number(3)
+            emptyCells[index].number = 2 // set number(num) => num = 3 // .number(3)
             // cell.number === 3
-    
-            emptyCells[index].element.style.color = "black"
+
+            // emptyCells[index].element.style.color = "black"
         }
     }
 
-    render(app){
-        for(let i = 0; i < this.cells.length; i++){
-            for(let j = 0; j < this.cells[i].length; j++){
+    render(app) {
+        for (let i = 0; i < this.cells.length; i++) {
+            for (let j = 0; j < this.cells[i].length; j++) {
                 // this.cells[i][j] => new Cell() <- initCells()
                 // const cell = this.cells[i][j]
                 // cell.element
@@ -145,13 +265,14 @@ class Cell {
     #number = 2
     position = new Position()
 
-    get number(){
+    get number() {
         return this.#number
     }
 
     set number(number) {
         this.#number = number
         this.element.innerText = this.#number
+        this.element.style.color = this.getColor()
     }
 
     constructor(position, number = 2, className = "cell", style = {}) {
@@ -161,11 +282,11 @@ class Cell {
         this.element.classList.add(className)
 
         // this.element.style = style // error
-        for(let key in style){
+        for (let key in style) {
             this.element.style[key] = style[key] // style = {width: "100%"} ==> key = "width", style[key] = "100%"
         }
 
-        if(this.#number){
+        if (this.#number) {
             this.element.innerText = this.#number
             this.element.style.color = this.getColor()
         }
@@ -173,11 +294,11 @@ class Cell {
         this.element.addEventListener("click", event => this.onClick(event))
     }
 
-    onClick(event) {}
-    clear(){}
-    render(){}
+    onClick(event) { }
+    clear() { }
+    render() { }
 
-    getColor(){
+    getColor() {
         const num = Math.log2(this.#number) // 1..11
         const step = 255 / 10
         const middleStep = 255 / 2 / 10
@@ -185,8 +306,8 @@ class Cell {
         // rgb(255, (255 / 4), 0) -> rgb(0, (255 / 4 * 3), 255)
 
         const red = step * (11 - num),
-              green = (255 / 4) + (middleStep * (num - 1)),
-              blue = step * (num - 1)
+            green = (255 / 4) + (middleStep * (num - 1)),
+            blue = step * (num - 1)
 
 
         // this.number = 2
@@ -194,7 +315,7 @@ class Cell {
         // red = 25.5 * 10 = 255
         // green = 63.75 + 12.75 * 0 = 63.75
         // blue = 25.5 * 0 = 0
-    
+
 
         // console.log('with ;')
         // for(let i = 0; i < 10; console.log(i++));
@@ -209,7 +330,7 @@ class Cell {
 }
 
 class BlackCell extends Cell {
-    constructor(position, number = 2, className = "cell", style = {}){
+    constructor(position, number = 2, className = "cell", style = {}) {
         super(position, number, className, style)
 
         this.element.style.backgroundColor = "rgba(0,0,0,.4)"
@@ -217,7 +338,7 @@ class BlackCell extends Cell {
 }
 
 class OtherColorCell extends Cell {
-    getColor(){
+    getColor() {
         const num = Math.log2(this.number) // 1..11
         const step = 255 / 10
         const middleStep = step / 2
@@ -225,8 +346,8 @@ class OtherColorCell extends Cell {
         // rgb((255 / 4), 0, 255) -> rgba((255 / 4 * 3), 255, 0)
 
         const blue = step * (11 - num),
-              red = (255 / 4) + (middleStep * (num - 1)),
-              green = step * (num - 1)
+            red = (255 / 4) + (middleStep * (num - 1)),
+            green = step * (num - 1)
 
         return `rgb(${red}, ${green}, ${blue})`
     }
@@ -240,6 +361,22 @@ class Position {
         this.x = x
         this.y = y
     }
+}
+
+class Popup {
+    #wrapper = document.createElement("div")
+    #body = document.createElement("div")
+
+    constructor(actions = {}){
+         // Создаем всю структуру элемента, как раньше делали в html
+         // Добавляем обработчики на закрытие
+         // Привязка действий к кнопкам
+    }    
+
+    show(){}
+    hide(){}
+
+    addContnentToBody(content){}
 }
 
 const game = new Game2048("app", "player")
