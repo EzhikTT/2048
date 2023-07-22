@@ -4,12 +4,12 @@ class Game2048 {
     #time = null // ? // ES2019
     player = ""
     app = null // ?
-    maxScore = 2048
     history = []
-    #startNumbers = [2, 2, 2, 4, 8, 16, 1024]
+    #startNumbers = [2, 2, 2, 4, 8, 16]
     #scoreElement = document.createElement("div")
     #fieldElement = document.createElement("div")
     #popup = null
+    #maxScore = 2048
 
     get time() {
         return this.#time
@@ -23,7 +23,7 @@ class Game2048 {
         this.app = document.getElementById(appId)
         this.player = player
 
-        if(popup){
+        if (popup) {
             this.#popup = popup
         }
 
@@ -46,45 +46,111 @@ class Game2048 {
     }
 
     gameOver() {
-        if(this.#popup){
+        if (this.#popup) {
             this.#popup.addContentToBody(`
                 <div style="text-align: center; font-weight: 800">You are LOSER</div>
                 <div style="text-align: center">Your score are ${this.score}</div>
             `)
             this.#popup.show()
             this.restartGame()
+            setTimeout(
+                () => this.#popup.hide(),
+                500
+            )
         }
     }
-    checkWin() { }
-    restartGame() { }
+    checkWin() {
+        if (this.#popup) {
+            if(this.score >= this.#maxScore){
+                this.#popup.addContentToBody(`
+                    <div style="text-align: center; font-weight: 800">You are WINNER</div>
+                    <div style="text-align: center">Your score are ${this.score}</div>
+                `)
+                this.#popup.show()
+                this.restartGame()
+                setTimeout(
+                    () => this.#popup.hide(),
+                    500
+                )
+            }
+            else if (!this.#isCanStep()){
+                this.gameOver()
+            }
+        }
+    }
+    restartGame() {
+        this.field.refreshCells([2, 2, 2, 4, 8, 16])
+    }
 
     stepBack() { }
     #move(event) {
-        let isNext = true
         switch (event.code) {
             case "KeyW":
                 this.#moveTop()
-                isNext = this.field.addNewNumber()
+                this.field.addNewNumber()
                 break
             case "KeyS":
                 this.#moveBottom()
-                isNext = this.field.addNewNumber()
+                this.field.addNewNumber()
                 break
             case "KeyD":
                 this.#moveRight()
-                isNext = this.field.addNewNumber()
+                this.field.addNewNumber()
                 break
             case "KeyA":
                 this.#moveLeft()
-                isNext = this.field.addNewNumber()
+                this.field.addNewNumber()
                 break
         }
 
         this.showScore()
 
-        if(!isNext){
-            this.gameOver()
+        this.checkWin()
+    }
+
+    #isCanStep(){
+        let res = false
+
+        for (let i = this.field.cells.length - 1; i > 0 && !res; i--) {
+            for (let j = 0; j < this.field.cells[i].length && !res; j++) {
+                if (
+                    this.field.cells[i][j].number === null ||
+                    this.field.cells[i - 1][j].number !== null &&
+                    this.field.cells[i][j].number === this.field.cells[i - 1][j].number
+                ) {
+                    res = true
+                }
+            }
         }
+        for (let i = 0; i < this.field.cells.length - 1 && !res; i++) {
+            for (let j = 0; j < this.field.cells[i].length && !res; j++) {
+                if (this.field.cells[i + 1][j].number !== null &&
+                    this.field.cells[i][j].number === this.field.cells[i + 1][j].number
+                ) {
+                    res = true
+                }
+            }
+        }
+        for (let j = 0; j < this.field.cells[0].length - 1 && !res; j++) {
+            for (let i = 0; i < this.field.cells.length && !res; i++) {
+                if (this.field.cells[i][j + 1].number !== null &&
+                    this.field.cells[i][j].number === this.field.cells[i][j + 1].number
+                ) {
+                    res = true
+                }
+            }
+        }
+        for (let j = this.field.cells[0].length - 1; j > 0 && !res; j--) {
+            for (let i = 0; i < this.field.cells.length && !res; i++) {
+                if (this.field.cells[i][j - 1].number !== null &&
+                    this.field.cells[i][j].number === this.field.cells[i][j - 1].number
+                ) {
+                    res = true
+                }
+            }
+        }
+
+        return res
     }
 
     #moveTop() {
@@ -250,6 +316,24 @@ class Field {
 
         // console.log(this.cells)
 
+    }
+
+    refreshCells(startNumbers = []){
+        for(let row of this.cells){
+            for(let cell of row){
+                let num = null
+
+                const n = Math.round(Math.random() * 100 + 1)
+                const isNeedAdd = n % 8 > 3
+
+                if (startNumbers.length > 0 && isNeedAdd) {
+                    const index = Math.round(Math.random() * (startNumbers.length - 1))
+                    num = startNumbers.splice(index, 1)[0]
+                }
+
+                cell.number = num
+            }
+        }
     }
 
     addNewNumber() {
