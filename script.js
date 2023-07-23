@@ -10,6 +10,8 @@ class Game2048 {
     #fieldElement = document.createElement("div")
     #popup = null
     #maxScore = 2048
+    #canMove = true
+    #results = []
 
     get time() {
         return this.#time
@@ -47,16 +49,57 @@ class Game2048 {
 
     gameOver() {
         if (this.#popup) {
-            this.#popup.addContentToBody(`
+            const body = document.createElement("div")
+            body.innerHTML = `
                 <div style="text-align: center; font-weight: 800">You are LOSER</div>
                 <div style="text-align: center">Your score are ${this.score}</div>
-            `)
+            `
+            const el = document.createElement("div")
+            el.appendChild(body)
+
+            const input = document.createElement("input")
+            el.appendChild(input)
+
+            this.#popup.content = el
+            this.#popup.actions = {
+                newGame: {
+                    label: "new game",
+                    action: (event) => {
+                        // Получение имени --> input
+                        const name = input.value
+
+                        // Сохранение результата --> Game
+                        this.#results.push({
+                            player: name,
+                            score: this.score
+                        })
+                        
+                        // Обновление таблицы результатов --> Game
+
+                        this.#popup.hide()
+                        this.#canMove = true
+                        this.restartGame()
+                    }
+                }
+            }
+
             this.#popup.show()
-            this.restartGame()
-            setTimeout(
-                () => this.#popup.hide(),
-                500
-            )
+
+            // this.#popup.addContentToBody(`
+            //     <div style="text-align: center; font-weight: 800">You are LOSER</div>
+            //     <div style="text-align: center">Your score are ${this.score}</div>
+            // `)
+
+            // this.#popup.show()
+            // this.#canMove = false
+            // setTimeout(
+            //     () => {
+            //         this.#popup.hide()
+            //         this.#canMove = true
+            //         this.restartGame()
+            //     },
+            //     5000
+            // )
         }
     }
     checkWin() {
@@ -67,9 +110,13 @@ class Game2048 {
                     <div style="text-align: center">Your score are ${this.score}</div>
                 `)
                 this.#popup.show()
-                this.restartGame()
+                this.#canMove = false
                 setTimeout(
-                    () => this.#popup.hide(),
+                    () => {
+                        this.#popup.hide()
+                        this.#canMove = true
+                        this.restartGame()
+                    },
                     500
                 )
             }
@@ -84,28 +131,30 @@ class Game2048 {
 
     stepBack() { }
     #move(event) {
-        switch (event.code) {
-            case "KeyW":
-                this.#moveTop()
-                this.field.addNewNumber()
-                break
-            case "KeyS":
-                this.#moveBottom()
-                this.field.addNewNumber()
-                break
-            case "KeyD":
-                this.#moveRight()
-                this.field.addNewNumber()
-                break
-            case "KeyA":
-                this.#moveLeft()
-                this.field.addNewNumber()
-                break
+        if(this.#canMove){
+            switch (event.code) {
+                case "KeyW":
+                    this.#moveTop()
+                    this.field.addNewNumber()
+                    break
+                case "KeyS":
+                    this.#moveBottom()
+                    this.field.addNewNumber()
+                    break
+                case "KeyD":
+                    this.#moveRight()
+                    this.field.addNewNumber()
+                    break
+                case "KeyA":
+                    this.#moveLeft()
+                    this.field.addNewNumber()
+                    break
+            }
+
+            this.showScore()
+
+            this.checkWin()
         }
-
-        this.showScore()
-
-        this.checkWin()
     }
 
     #isCanStep(){
@@ -483,38 +532,63 @@ class Position {
 class Popup {
     #wrapper = document.createElement("div")
     #body = document.createElement("div")
+    #actions = document.createElement("div")
+
+    set actions(actions){
+        this.#actions.innerText = ""
+        for (let key in actions) {
+            const action = actions[key]
+            if (action.action) {
+                const button = document.createElement("div")
+
+                button.classList.add('button')
+                button.innerText = action.label || key // action.label !== undefined ? action.label : key
+                button.addEventListener('click', (event) => action.action(event))
+
+                this.#actions.appendChild(button)
+            }
+        }
+    }
+
+    set content(element) {
+        this.#body.innerText = ""
+        this.#body.appendChild(element)
+    }
 
     constructor(actions = {}) {
         // Создаем всю структуру элемента, как раньше делали в html
         this.#wrapper.classList.add("wrapper-popup")
         this.#body.classList.add("popup-body")
+        this.#actions.classList.add("popup-actions")
+
+        this.actions = actions
 
         const popupContent = document.createElement("div")
 
         popupContent.appendChild(this.#body)
-
+        popupContent.appendChild(this.#actions)
         // Добавляем обработчики на закрытие
         // Привязка действий к кнопкам
-        if (Object.keys(actions).length > 0) {
-            for (let key in actions) {
-                // actions = {key: {label?, action}}
-                // actions = {
-                //    save: { label: 'сохранить', action: (event) => {...} }, 
-                //    delete: { action: () => {...} }
-                //    ...
-                // }
-                const action = actions[key]
-                if (action.action) {
-                    const button = document.createElement("div")
+        // if (Object.keys(actions).length > 0) {
+        //     for (let key in actions) {
+        //         // actions = {key: {label?, action}}
+        //         // actions = {
+        //         //    save: { label: 'сохранить', action: (event) => {...} }, 
+        //         //    delete: { action: () => {...} }
+        //         //    ...
+        //         // }
+        //         const action = actions[key]
+        //         if (action.action) {
+        //             const button = document.createElement("div")
 
-                    button.classList.add('button')
-                    button.innerText = action.label || key // action.label !== undefined ? action.label : key
-                    button.addEventListener('click', (event) => action.action(event))
+        //             button.classList.add('button')
+        //             button.innerText = action.label || key // action.label !== undefined ? action.label : key
+        //             button.addEventListener('click', (event) => action.action(event))
 
-                    popupContent.appendChild(button)
-                }
-            }
-        }
+        //             popupContent.appendChild(button)
+        //         }
+        //     }
+        // }
         this.#wrapper.appendChild(popupContent)
 
         document.body.appendChild(this.#wrapper)
