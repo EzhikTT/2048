@@ -8,10 +8,13 @@ class Game2048 {
     #startNumbers = [2, 2, 2, 4, 8, 16]
     #scoreElement = document.createElement("div")
     #fieldElement = document.createElement("div")
+    #leaderboardElement = document.createElement("div")
+    #stepBackElement = document.createElement("button")
     #popup = null
     #maxScore = 2048
     #canMove = true
     #results = []
+    #keyClick = null
 
     get time() {
         return this.#time
@@ -32,14 +35,25 @@ class Game2048 {
         this.#fieldElement.classList.add('field')
         this.field = new Field(this.#fieldElement, 4, this.#startNumbers)
 
+        this.#stepBackElement.disabled = true
+        this.#stepBackElement.innerText = "step back"
+        this.#stepBackElement.addEventListener("click", () => this.stepBack())
+
         this.app.appendChild(this.#scoreElement)
         this.app.appendChild(this.#fieldElement)
+        this.app.appendChild(this.#leaderboardElement)
+        this.app.appendChild(this.#stepBackElement)
 
-        document.body.addEventListener("keyup", (event) => this.#move(event))
+        this.#keyClick = (event) => this.#move(event)
+
+        document.body.addEventListener("keyup", this.#keyClick)
     }
 
     init() {
         this.#render()
+
+
+        // this.gameOver()
     }
     #render() { // ES2019
         this.showField()
@@ -49,6 +63,9 @@ class Game2048 {
 
     gameOver() {
         if (this.#popup) {
+
+            document.body.removeEventListener("keyup", this.#keyClick)
+
             const body = document.createElement("div")
             body.innerHTML = `
                 <div style="text-align: center; font-weight: 800">You are LOSER</div>
@@ -69,16 +86,56 @@ class Game2048 {
                         const name = input.value
 
                         // Сохранение результата --> Game
-                        this.#results.push({
+                        const item = {
                             player: name,
                             score: this.score
-                        })
-                        
+                        }
+
+                        if (this.#results.length === 0) {
+                            this.#results.push(item)
+                        }
+                        else {
+                            let insertIndex = -1
+                            for (let i = 0; i < this.#results.length && insertIndex === -1; i++) {
+                                if (this.#results[i].score < item.score) {
+                                    insertIndex = i
+                                }
+                            }
+                            if (insertIndex === -1) {
+                                this.#results.push(item)
+                            }
+                            else {
+                                this.#results.splice(insertIndex, 0, item)
+                            }
+                            /* 
+                                cosnt arr = [0, 1, 2, 3]
+
+                                arr.splice(1, 1) => arr = [0, 2, 3]
+                                arr.splice(1, 0, "1") => arr = [0, "1", 1, 2, 3]
+                                arr.splice(2, 1, "4") => arr = [0, 1, "4", 3]
+                                arr.splice(1, 1, "2", "6", "8") => arr = [0, "2", "6", "8", 2, 3]
+                                arr.splice(1, 0, "2", "6", "8") => arr = [0, "2", "6", "8", 1, 2, 3]
+                            */
+                        }
+
+                        // this.#results.push({
+                        //     player: name,
+                        //     score: this.score
+                        // })
+
                         // Обновление таблицы результатов --> Game
+                        this.saveResult()
 
                         this.#popup.hide()
                         this.#canMove = true
                         this.restartGame()
+
+
+                        // TODO test
+                        setTimeout(
+                            () => this.gameOver(),
+                            10000
+                        )
                     }
                 }
             }
@@ -104,7 +161,7 @@ class Game2048 {
     }
     checkWin() {
         if (this.#popup) {
-            if(this.score >= this.#maxScore){
+            if (this.score >= this.#maxScore) {
                 this.#popup.addContentToBody(`
                     <div style="text-align: center; font-weight: 800">You are WINNER</div>
                     <div style="text-align: center">Your score are ${this.score}</div>
@@ -120,35 +177,79 @@ class Game2048 {
                     500
                 )
             }
-            else if (!this.#isCanStep()){
+            else if (!this.#isCanStep()) {
                 this.gameOver()
             }
         }
     }
     restartGame() {
         this.field.refreshCells([2, 2, 2, 4, 8, 16])
+        document.body.addEventListener("keyup", this.#keyClick)
     }
 
-    stepBack() { }
+    stepBack() {
+        // unshift <=> push
+        // shift <=> pop
+
+        // this.history => stack => first in - last out
+        if (this.history.length > 0) {
+            const step = this.history.pop()
+            for (let i = 0; i < step.length; i++) {
+                for (let j = 0; j < step[i].length; j++) {
+                    const cell = this.field.cells[i][j]
+                    cell.number = step[i][j]
+                }
+            }
+        }
+        else {
+            this.#stepBackElement.disabled = true
+        }
+
+        // button.disabled = true | false
+
+        // this.history = []
+    }
+
+    #saveHistory() {
+        const step = []
+        for (let row of this.field.cells) {
+            const aRow = []
+            for (let cell of row) {
+                aRow.push(cell.number)
+            }
+            step.push(aRow)
+        }
+        if (this.history.length >= 5) {
+            // this.history.splice(0, 1)
+            this.history.shift() // queue => first in - first out
+        }
+        this.history.push(step)
+        this.#stepBackElement.disabled = false
+    }
+
     #move(event) {
-        if(this.#canMove){
-            switch (event.code) {
-                case "KeyW":
-                    this.#moveTop()
-                    this.field.addNewNumber()
-                    break
-                case "KeyS":
-                    this.#moveBottom()
-                    this.field.addNewNumber()
-                    break
-                case "KeyD":
-                    this.#moveRight()
-                    this.field.addNewNumber()
-                    break
-                case "KeyA":
-                    this.#moveLeft()
-                    this.field.addNewNumber()
-                    break
+        if (this.#canMove) {
+
+            // this.#saveHistory() // ???
+
+            const controls = ["KeyW", "KeyS", "KeyD", "KeyA"]
+            if(controls.includes(event.code)) {
+                this.#saveHistory()
+                switch (event.code) {
+                    case "KeyW":
+                        this.#moveTop()
+                        break
+                    case "KeyS":
+                        this.#moveBottom()
+                        break
+                    case "KeyD":
+                        this.#moveRight()
+                        break
+                    case "KeyA":
+                        this.#moveLeft()
+                        break
+                }
+                this.field.addNewNumber()
             }
 
             this.showScore()
@@ -157,7 +258,7 @@ class Game2048 {
         }
     }
 
-    #isCanStep(){
+    #isCanStep() {
         let res = false
 
         for (let i = this.field.cells.length - 1; i > 0 && !res; i--) {
@@ -296,7 +397,31 @@ class Game2048 {
     }
     showTime() { }
 
-    saveResult() { }
+    saveResult() {
+        let str = ""
+
+        // for(let i = 0; i < this.#results.length; i++){
+        //     for(let j = 0; j < this.#results.length; j++){
+        //         if(this.#results[i].score > this.#results[j].score){
+        //             const temp = this.#results[j]
+        //             this.#results[j] = this.#results[i]
+        //             this.#results[i] = temp
+        //         }
+        //     }
+        // }
+
+        // this.#results.sort((a, b) => b.score - a.score) // function(a, b){return a.score - b.score}
+
+        for (let i of this.#results) { // this.#results = [{player, score}, {player, score}, {player, score}]
+            // debugger
+            // ????
+            str += `<div>${i.player} <===> ${i.score}</div>`
+        }
+
+        // str === player + score player + score player + score player + score player + score
+
+        this.#leaderboardElement.innerHTML = str
+    }
 }
 
 
@@ -367,9 +492,9 @@ class Field {
 
     }
 
-    refreshCells(startNumbers = []){
-        for(let row of this.cells){
-            for(let cell of row){
+    refreshCells(startNumbers = []) {
+        for (let row of this.cells) {
+            for (let cell of row) {
                 let num = null
 
                 const n = Math.round(Math.random() * 100 + 1)
@@ -534,7 +659,7 @@ class Popup {
     #body = document.createElement("div")
     #actions = document.createElement("div")
 
-    set actions(actions){
+    set actions(actions) { // .actions = actions
         this.#actions.innerText = ""
         for (let key in actions) {
             const action = actions[key]
@@ -607,6 +732,7 @@ class Popup {
 }
 
 const popup = new Popup()
+// popup.show()
 
 const game = new Game2048("app", "player", popup)
 game.init()
